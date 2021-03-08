@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ManageUser_API.Models;
 using ManageUser_API.ViewModels;
+using System.Text;
 
 namespace ManageUser_API.Controllers
 {
@@ -103,11 +104,64 @@ namespace ManageUser_API.Controllers
         }
         //search user theo tên, theo thứ tự tuổi giảm dần và trạng thái isActive=true
         [HttpGet("Search")]
-        public async Task<ActionResult<IEnumerable<UserVM>>> GetSearchNames([FromQuery(Name = "name")] string name, int pageSize, int pageIndex)
+        public async Task<ActionResult<IEnumerable<UserVM>>> GetSearchNames([FromQuery(Name = "name")] string name, int pageSize, int pageIndex, string sortType, string sortKey, bool isActive)
         {
-            List<User> searchUsers;
-            searchUsers = await _context.Users.Where(u => u.Name.ToLower().Contains(name.ToLower()) && u.isActive == true).OrderByDescending(u => u.Age).Skip((pageIndex-1)*pageSize).Take(pageSize).ToListAsync();
-            return searchUsers.Select(u => new UserVM() { User = u }).ToList();   
+
+            List<User> searchUsers = new List<User>();
+            if(name != null)
+            {
+                switch (sortKey)
+                {
+                    case "age":
+                        if (sortType == "DESC")
+                        {
+                            if (isActive == true)
+                            { 
+                                searchUsers = await _context.Users.Where(u => u.Name.ToLower().Contains(name.ToLower()) && u.isActive == true).OrderByDescending(u => u.Age).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync(); 
+                            }
+
+                            else
+                                searchUsers = await _context.Users.Where(u => u.Name.ToLower().Contains(name.ToLower()) && u.isActive == false).OrderByDescending(u => u.Age).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+
+                        }
+                        else
+                        {
+                            if (isActive == true)
+                            {
+                                searchUsers = await _context.Users.Where(u => u.Name.ToLower().Contains(name.ToLower()) && u.isActive == true).OrderBy(u => u.Age).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+
+                            }
+                            else
+                                searchUsers = await _context.Users.Where(u => u.Name.ToLower().Contains(name.ToLower()) && u.isActive == false).OrderBy(u => u.Age).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+                        }
+                        break;
+                    case "name":
+                        if (sortType == "DESC")
+                        {
+                            if(isActive == true)
+                            {
+                                searchUsers = await _context.Users.Where(u => u.Name.ToLower().Contains(name.ToLower()) && u.isActive == true).OrderByDescending(u => u.Name).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+
+                            }
+                            else
+                                searchUsers = await _context.Users.Where(u => u.Name.ToLower().Contains(name.ToLower()) && u.isActive == false).OrderByDescending(u => u.Name).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+                        }
+                        else
+                        {
+                            if (isActive == true)
+                            {
+                                searchUsers = await _context.Users.Where(u => u.Name.ToLower().Contains(name.ToLower()) && u.isActive == true).OrderBy(u => u.Name).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+
+                            }
+                            else
+                                searchUsers = await _context.Users.Where(u => u.Name.ToLower().Contains(name.ToLower()) && u.isActive == false).OrderBy(u => u.Name).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+                        }
+                        break;
+                }
+
+            }
+            return searchUsers.Select(u => new UserVM() { User = u }).ToList();
+
         }
         //API sẽ truyền xuống dạng
         //GET /api/users? pageIndex = 1 & pageSize = 10 & searchKey = abc & sortType = DESC & sortKey = age & isActive = true
